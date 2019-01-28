@@ -1,8 +1,12 @@
 ## mjson parse
 
-- mer 2019.1
+================= =====  
++Author: mer  
++Date: 2019.1  
+================= =====  
 
-[miloyip's json-tutori](https://github.com/miloyip/json-tutorial)
+---
+- 参考教程 [miloyip's json-tutori](https://github.com/miloyip/json-tutorial)
 ---
 
 2019.1.27
