@@ -4,13 +4,46 @@
 #include <math.h>
 #include <stdlib.h>
 
+#ifndef JSON_PARSE_STACK_INIT_SIZE
+#define JSON_PARSE_STACK_INIT_SIZE 256
+#endif
+
 #define EXPECT(c, ch)	do{ assert(*c->json == (ch)); c->json++;}while(0)
 #define ISDIGIT(ch)	((ch) >= '0' && (ch) <= '9')
 #define ISDIGIT1TO9(ch) ((ch) >= '1' && (ch) <= '9')
+#define PUTC(c, ch)	do{ *(char*)json_context_push(c, sizeof(char)) = (ch);}
+
 typedef struct{
-    const char *json;
+    const char *json;/*保存json串*/
+    char *stack;/*栈底指针*/
+    size_t size, top;/*栈大小与栈顶位置*/
 }json_context;
 
+/*入站*/
+static void* json_context_push(json_context *c, size_t size){
+    void *ret;
+    assert(size > 0);
+    if(c->top + size >= c->size){
+	if(c->size == 0)
+	    c->size = JSON_PARSE_STACK_INIT_SIZE;
+	while(c->top + size >= c->size)
+	    c->size += c->size >>1;/*扩展栈容量c->size *1.5*/
+	c->stack = (char*)realloc(c->stack,c->size);
+    }
+
+    /*返回新入栈数据的起始指针*/
+    ret = c->stack + c->top;
+    c->top + =size;
+    return ret;
+}
+
+/*出栈*/
+static void* json_context_pop(json_context *c, size_t size){
+    assert(c->top >= size);
+    return c->stack + (c->top -= size);
+}
+
+/*跳过空格*/
 static void json_parse_whitespace(json_context *c){
     const char *p = c->json;
     while( *p == ' ' || *p == '\t' || *p == '\n' || *p == '\r')
@@ -18,6 +51,7 @@ static void json_parse_whitespace(json_context *c){
     c->json = p;
 }
 
+/*解析true, false, null*/
 static int json_parse_literal(json_context *c, json_value *v, const char *literal, json_type type){
     size_t i;
     EXPECT(c, literal[0]);
@@ -28,6 +62,8 @@ static int json_parse_literal(json_context *c, json_value *v, const char *litera
     v->type = type;
     return JSON_PARSE_OK;
 }
+
+/*解析数字*/
 static int json_parse_number(json_context *c, json_value *v){
     const char *p = c->json;
     if(*p == '-') p++;
@@ -56,21 +92,42 @@ static int json_parse_number(json_context *c, json_value *v){
     return JSON_PARSE_OK;
 }
 
-static int json_parse_value(json_context *c, json_value *v){
-    switch(*c->json){
-	case 'n': return json_parse_literal(c, v, "null", JSON_NULL);
-	case 'f': return json_parse_literal(c, v, "false", JSON_FALSE);
-	case 't': return json_parse_literal(c, v, "true", JSON_TRUE);
-	case '\0': return JSON_PARSE_EXPECT_VALUE;
-	default: return json_parse_number(c, v);
+/*解析字符串*/
+static int json_parse_string(json_context *c, json_value *v){
+    size_t head = c->top, len;
+    const char *p;
+    EXPECT(c, '\"');
+    p = c->json;
+    for(;;){
+	char ch = *p++;
+	switch(ch){
+	    case '\"':
+		len = c->top - head;
+		json_set_string(v, (const char *)json_context_pop(c, len), len);
+		c->json = p;
+		return JSON_PARSE_OK;
+	    case '\0':
+		c->top = head;
+		return JSON_PARSE_MISS_QUOTATION_MARK;
+	    default :
+		PUTC(c, ch);
+	}
     }
 }
 
-static int json_parse_end(json_context *c){
-    if(c->json[0] == '\0') return JSON_PARSE_OK;
-    return JSON_PARSE_ROOT_NOT_SINGULAR;
+/*解析json值,返回解析状态[JSON_PARSE_OK或其他错误码]*/
+static int json_parse_value(json_context *c, json_value *v){
+    switch(*c->json){
+	case 'n' : return json_parse_literal(c, v, "null", JSON_NULL);
+	case 'f' : return json_parse_literal(c, v, "false", JSON_FALSE);
+	case 't' : return json_parse_literal(c, v, "true", JSON_TRUE);
+	case '"' : return json_parse_string(c, v);
+	case '\0': return JSON_PARSE_EXPECT_VALUE;
+	default  : return json_parse_number(c, v);
+    }
 }
 
+/*处理json串并调用json_parse_value解析json值*/
 int json_parse(json_value *v, const char *json){
     json_context c;
     assert(v != NULL);
@@ -88,12 +145,45 @@ int json_parse(json_value *v, const char *json){
     return ret;
 }
 
+
 json_type json_get_type(const json_value *v){
     assert( v != NULL);
     return v->type;
 }
 
+int json_get_boolean(const json_value *v){
+    /*TODO*/
+}
+
+void json_set_boolean(json_value *v, int b){
+    /*TODO*/
+}
+
 double json_get_number(const json_value *v){
     assert(v != NULL && v->type == JSON_NUMBER);
     return v->n;
+}
+
+void json_set_number(json_value *v, double n){
+    /*TODO*/
+}
+
+const char* json__get_string(const json_value *v){
+    assert(v != NULL && v->type == JSON_STRING);
+    return v->u.s.s;
+}
+
+size_t json_get_string_length(const json_value *v){
+    assert(v != NULL && v->type == JOSN_STRING);
+    return v->u.s.len;
+}
+
+void json_set_string(json_value *v, const char *s, size_t len){
+    assert( v != NULL && (s != NULL || len == 0));
+    json_free(v);
+    v->u.s.s = (char *)malloc(len+1);
+    memcpy(v->u.s.s, s, len);
+    v->u.s.s[len] = '\0';/*以NULL结尾的C风格字符串*/
+    v->u.s.len = len;
+    v->type = JSON_STRING;
 }
