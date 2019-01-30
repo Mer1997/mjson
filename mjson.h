@@ -1,6 +1,8 @@
 #ifndef __MJSON_H__
 #define __MJSON_H__
 
+#include <stddef.h>/*size_t*/
+
 typedef enum { JSON_NULL, JSON_FALSE, JSON_TRUE, JSON_NUMBER, JSON_STRING, JSON_ARRAY, JSON_OBJECT } json_type;
 
 typedef struct {

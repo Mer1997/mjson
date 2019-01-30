@@ -1,8 +1,10 @@
 #include "mjson.h"
-#include <assert.h>
-#include <errno.h>
-#include <math.h>
-#include <stdlib.h>
+#include <assert.h>  /* assert() */
+#include <errno.h>   /* errno, ERANGE */
+#include <math.h>    /* HUGE_VAL */
+#include <stdlib.h>  /* NULL, malloc(), realloc(), free(), strtod() */
+#include <string.h>  /* memcpy() */
+
 
 #ifndef JSON_PARSE_STACK_INIT_SIZE
 #define JSON_PARSE_STACK_INIT_SIZE 256
@@ -11,7 +13,7 @@
 #define EXPECT(c, ch)	do{ assert(*c->json == (ch)); c->json++;}while(0)
 #define ISDIGIT(ch)	((ch) >= '0' && (ch) <= '9')
 #define ISDIGIT1TO9(ch) ((ch) >= '1' && (ch) <= '9')
-#define PUTC(c, ch)	do{ *(char*)json_context_push(c, sizeof(char)) = (ch);}
+#define PUTC(c, ch)	do{ *(char*)json_context_push(c, sizeof(char)) = (ch);}while(0)
 
 typedef struct{
     const char *json;/*保存json串*/
@@ -33,7 +35,7 @@ static void* json_context_push(json_context *c, size_t size){
 
     /*返回新入栈数据的起始指针*/
     ret = c->stack + c->top;
-    c->top + =size;
+    c->top +=size;
     return ret;
 }
 
@@ -84,8 +86,8 @@ static int json_parse_number(json_context *c, json_value *v){
 	for(p++; ISDIGIT(*p); p++);
     }
     errno = 0;
-    v->n = strtod(c->json, NULL);
-    if(errno == ERANGE && (v->n == HUGE_VAL || v->n == -HUGE_VAL))
+    v->u.n = strtod(c->json, NULL);
+    if(errno == ERANGE && (v->u.n == HUGE_VAL || v->u.n == -HUGE_VAL))
 	return JSON_PARSE_NUMBER_TOO_BIG;
     v->type = JSON_NUMBER;
     c->json = p;
@@ -130,11 +132,13 @@ static int json_parse_value(json_context *c, json_value *v){
 /*处理json串并调用json_parse_value解析json值*/
 int json_parse(json_value *v, const char *json){
     json_context c;
+    int ret;
     assert(v != NULL);
     c.json = json;
-    v->type = JSON_NULL;
+    c.stack = NULL;
+    c.size = c.top = 0;
+    json_init(v);
     json_parse_whitespace(&c);
-    int ret;;
     if ((ret = json_parse_value(&c, v)) == JSON_PARSE_OK) {
         json_parse_whitespace(&c);
         if (*c.json != '\0') {
@@ -142,9 +146,17 @@ int json_parse(json_value *v, const char *json){
             ret = JSON_PARSE_ROOT_NOT_SINGULAR;
         }
     }
+    assert(c.top == 0);
+    free(c.stack);
     return ret;
 }
 
+void json_free(json_value *v){
+    assert(v != NULL);
+    if(v->type == JSON_STRING)
+	free(v->u.s.s);
+    v->type = JSON_NULL;
+}
 
 json_type json_get_type(const json_value *v){
     assert( v != NULL);
@@ -161,20 +173,20 @@ void json_set_boolean(json_value *v, int b){
 
 double json_get_number(const json_value *v){
     assert(v != NULL && v->type == JSON_NUMBER);
-    return v->n;
+    return v->u.n;
 }
 
 void json_set_number(json_value *v, double n){
     /*TODO*/
 }
 
-const char* json__get_string(const json_value *v){
+const char* json_get_string(const json_value *v){
     assert(v != NULL && v->type == JSON_STRING);
     return v->u.s.s;
 }
 
 size_t json_get_string_length(const json_value *v){
-    assert(v != NULL && v->type == JOSN_STRING);
+    assert(v != NULL && v->type == JSON_STRING);
     return v->u.s.len;
 }
 
