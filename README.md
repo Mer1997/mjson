@@ -29,3 +29,14 @@
  - 添加对json数字的测试用例
 
 ---
+
+2019.1.30
+
++ 重构代码,完善功能,增加了对字符串的解析:
+ - 为`json_value`添加了新的成员:`char* s`和`size_t len`
+ - 重构了代码的逻辑,添加了对`json_value`的内存管理
+ - 为`null`,`boolean`,`number`值添加`json_set_null`,`json_set_boolean`和`json_setnumber`访问函数
+ - 添加了对`string`值的解析
+ - 新增了错误码:`JSON_PARSE_MISS_QUOTATION_MARK`,`JSON_PARSE_INVALID_STRING_ESCAPE`,`JSON_PARSE_INVALID_STRING_CHAR`
+ - 为`string`值添加了对应的测试用例
+ - 修改了先前的部分测试逻辑
