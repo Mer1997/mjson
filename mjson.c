@@ -94,6 +94,7 @@ static int json_parse_number(json_context *c, json_value *v){
     return JSON_PARSE_OK;
 }
 
+/*escape = {'/', 'b', 'f', 'n', 'r', 't'};*/
 /*解析字符串*/
 static int json_parse_string(json_context *c, json_value *v){
     size_t head = c->top, len;
@@ -111,7 +112,26 @@ static int json_parse_string(json_context *c, json_value *v){
 	    case '\0':
 		c->top = head;
 		return JSON_PARSE_MISS_QUOTATION_MARK;
-	    default :
+	    case '\\':
+                switch (*p++) {
+                    case '\"': PUTC(c, '\"'); break;
+                    case '\\': PUTC(c, '\\'); break;
+                    case '/':  PUTC(c, '/' ); break;
+                    case 'b':  PUTC(c, '\b'); break;
+                    case 'f':  PUTC(c, '\f'); break;
+                    case 'n':  PUTC(c, '\n'); break;
+                    case 'r':  PUTC(c, '\r'); break;
+                    case 't':  PUTC(c, '\t'); break;
+                    default:
+                        c->top = head;
+                        return JSON_PARSE_INVALID_STRING_ESCAPE;
+		}
+		break;
+	     default :
+		if((unsigned char)ch < 0x20){
+		    c->top = head;
+		    return JSON_PARSE_INVALID_STRING_CHAR;
+		}
 		PUTC(c, ch);
 	}
     }
@@ -164,11 +184,15 @@ json_type json_get_type(const json_value *v){
 }
 
 int json_get_boolean(const json_value *v){
-    /*TODO*/
+    assert(v != NULL);
+    return v->type == JSON_TRUE;
 }
 
 void json_set_boolean(json_value *v, int b){
-    /*TODO*/
+    assert(v != NULL);
+    json_free(v);
+    v->type = b ? JSON_TRUE : JSON_FALSE;
+
 }
 
 double json_get_number(const json_value *v){
@@ -177,7 +201,10 @@ double json_get_number(const json_value *v){
 }
 
 void json_set_number(json_value *v, double n){
-    /*TODO*/
+    assert(v != NULL);
+    json_free(v);
+    v->u.n = n;
+    v->type = JSON_NUMBER;
 }
 
 const char* json_get_string(const json_value *v){

@@ -15,7 +15,7 @@ static int test_pass = 0;
 	    ++test_pass;\
 	else{\
 	    fprintf(stderr, "%s:%d: expect: " format " actual: " format "\n", __FILE__, __LINE__, expect, actual);\
-	    main_ret;\
+	    main_ret = 1;\
 	}\
     }while(0)
 
@@ -27,7 +27,7 @@ static int test_pass = 0;
     EXPECT_EQ_BASE(sizeof(expect) - 1 == alength && memcmp(expect, actual, alength) == 0, expect, actual, "%s")
 
 #define EXPECT_TRUE(actual) EXPECT_EQ_BASE((actual) != 0, "true", "false", "%s")
-#define EXPECT_FALSE(actual) EXPECT_EQ_BASE((actual) == 1, "false", "true", "%s")
+#define EXPECT_FALSE(actual) EXPECT_EQ_BASE((actual) == 0, "false", "true", "%s")
 
 static void test_parse_null(){
     json_value v;
@@ -59,9 +59,11 @@ static void test_parse_false(){
 #define TEST_NUMBER(expect, json)\
     do{\
 	json_value v;\
+	json_init(&v);\
 	EXPECT_EQ_INT(JSON_PARSE_OK, json_parse(&v, json));\
 	EXPECT_EQ_INT(JSON_NUMBER, json_get_type(&v));\
 	EXPECT_EQ_DOUBLE(expect, json_get_number(&v));\
+	json_free(&v);\
     }while(0)
 
 static void test_parse_number(){
@@ -109,18 +111,18 @@ static void test_parse_number(){
 static void test_parse_string(){
     TEST_STRING("", "\"\"");
     TEST_STRING("Hello","\"Hello\"");
-#if 0
     TEST_STRING("Hello\nWorld", "\"Hello\\nWorld\"");
     TEST_STRING("\" \\ / \b \f \n \r \t", "\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t\"");
-#endif
 }
 
 #define TEST_ERROR(error, json)\
     do{\
 	json_value v;\
+	json_init(&v);\
 	v.type = JSON_FALSE;\
 	EXPECT_EQ_INT(error, json_parse(&v, json));\
 	EXPECT_EQ_INT(JSON_NULL, json_get_type(&v));\
+	json_free(&v);\
     }while(0)
 
 
@@ -165,11 +167,15 @@ static void test_parse_missing_quotation_mark(){
 }
 
 static void test_parse_invalid_string_escape(){
-
+    TEST_ERROR(JSON_PARSE_INVALID_STRING_ESCAPE, "\"\\v\"");
+    TEST_ERROR(JSON_PARSE_INVALID_STRING_ESCAPE, "\"\\'\"");
+    TEST_ERROR(JSON_PARSE_INVALID_STRING_ESCAPE, "\"\\0\"");
+    TEST_ERROR(JSON_PARSE_INVALID_STRING_ESCAPE, "\"\\x12\"");
 }
 
 static void test_parse_invalid_string_char(){
-
+    TEST_ERROR(JSON_PARSE_INVALID_STRING_CHAR, "\"\x01\"");
+    TEST_ERROR(JSON_PARSE_INVALID_STRING_CHAR, "\"\x1F\"");
 }
 
 static void test_access_null(){
@@ -182,11 +188,21 @@ static void test_access_null(){
 }
 
 static void test_access_boolean(){
-    /*TODO*/
+    json_value v;
+    json_init(&v);
+    json_set_boolean(&v, 1);
+    EXPECT_TRUE(json_get_boolean(&v));
+    json_set_boolean(&v, 0);
+    EXPECT_FALSE(json_get_boolean(&v));
+    json_free(&v);
 }
 
 static void test_access_number(){
-    /*TODO*/
+    json_value v;
+    json_init(&v);
+    json_set_number(&v, 1.31);
+    EXPECT_EQ_DOUBLE(1.31, json_get_number(&v));
+    json_free(&v);
 }
 
 static void test_acess_string(){
@@ -204,6 +220,7 @@ static void test_parse(){
     test_parse_true();
     test_parse_false();
     test_parse_number();
+    test_parse_string();
     test_parse_number_too_big();
     test_parse_expect_value();
     test_parse_invalid_value();
