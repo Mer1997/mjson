@@ -94,6 +94,18 @@ static int json_parse_number(json_context *c, json_value *v){
     return JSON_PARSE_OK;
 }
 
+static const char* json_parse_hex4(const char *p, unsigned *u){
+    /*TODO*/
+    return p;
+}
+
+static void json_encode_utd8(json_context *c, unsigned u){
+    /*TODO*/
+}
+
+#define STRING_ERROR(ret) do{ c->top = head; return ret; } while(0)
+
+
 /*escape = {'/', 'b', 'f', 'n', 'r', 't'};*/
 /*解析字符串*/
 static int json_parse_string(json_context *c, json_value *v){
@@ -122,16 +134,19 @@ static int json_parse_string(json_context *c, json_value *v){
                     case 'n':  PUTC(c, '\n'); break;
                     case 'r':  PUTC(c, '\r'); break;
                     case 't':  PUTC(c, '\t'); break;
+		    case 'u':
+			if( !(p = json_parse_hex4(p, &u)))
+			    STRING_ERROR(JSON_PARSE_INVALID_UNICODE_HEX;
+			/*TODO surrogate handling*/
+			json_encode_utf8(c, u);
+			break;
                     default:
-                        c->top = head;
-                        return JSON_PARSE_INVALID_STRING_ESCAPE;
+			STRING_ERROR(JSON_PARSE_INVALID_STRING_ESCAPE);
 		}
 		break;
 	     default :
-		if((unsigned char)ch < 0x20){
-		    c->top = head;
-		    return JSON_PARSE_INVALID_STRING_CHAR;
-		}
+		if((unsigned char)ch < 0x20)
+		    STRING_ERROR(JSON_PARSE_INVALID_STRING_CHAR);
 		PUTC(c, ch);
 	}
     }
