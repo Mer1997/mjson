@@ -40,3 +40,15 @@
  - 新增了错误码:`JSON_PARSE_MISS_QUOTATION_MARK`,`JSON_PARSE_INVALID_STRING_ESCAPE`,`JSON_PARSE_INVALID_STRING_CHAR`
  - 为`string`值添加了对应的测试用例
  - 修改了先前的部分测试逻辑
+
+---
+
+2019.2.2
+
++ 增加字符串对Unicode编码的支持:
+ - 新增错误码`JSON_PARSE_INVALID_UNICODE_HEX`和`JSON_PARSE_INVALID_UNICODE_SURROGATE`
+ - 完善了对UTF-8编码的解析
+ - 添加了相关测试用例
+
+---
+
