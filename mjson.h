@@ -21,7 +21,9 @@ enum {
     JSON_PARSE_NUMBER_TOO_BIG,/*数字过大*/
     JSON_PARSE_MISS_QUOTATION_MARK,/*没有找到双引号结尾*/
     JSON_PARSE_INVALID_STRING_ESCAPE,/*非法转义字符*/
-    JSON_PARSE_INVALID_STRING_CHAR/**/
+    JSON_PARSE_INVALID_STRING_CHAR,/**/
+    JSON_PARSE_INVALID_UNICODE_SURROGATE,/*代理项非法*/
+    JSON_PARSE_INVALID_UNICODE_HEX/*Unicode字符非法*/
 };
 
 #define json_init(v) do{ (v)->type = JSON_NULL; }while(0)
