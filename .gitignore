@@ -2,4 +2,4 @@
 *.gch
 *.out
 .*
-/test
+build/

@@ -5,14 +5,15 @@
 
 typedef enum { JSON_NULL, JSON_FALSE, JSON_TRUE, JSON_NUMBER, JSON_STRING, JSON_ARRAY, JSON_OBJECT } json_type;
 
-typedef struct {
+typedef struct json_value json_value;
+struct json_value{
     union{
 	struct{ json_value *e; size_t size;}a;/*array*/
 	struct{ char*s; size_t len; }s; /*string*/
 	double n;/*number*/
     }u;
     json_type type;
-}json_value;
+};
 
 enum {
     JSON_PARSE_OK = 0,/*正确码*/
