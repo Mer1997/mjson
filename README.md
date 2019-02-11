@@ -60,3 +60,14 @@
  - 修改了部分测试用例
  - 增加了数组部分的测试用例
 
+---
+
+2019.2.11
+
++ 重构代码,增加了对'object'对象的解析支持:
+ - 新增错误码`JSON_PARSE_MISS_KEY`、`JSON_PARSE_MISS_COLON`和`JSON_PARSE_MISS_COMMA_OR_CURLY_BRACKET`
+ - 重构了对`string`值的解析方式，提取对字符串的解析复用于`object`键值解析, 并通过了单元测试
+ - 增加了对`object`值的解析
+ - 添加了相关的单元测试
+
+--- 
