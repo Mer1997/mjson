@@ -136,8 +136,8 @@ static void json_encode_utf8(json_context *c, unsigned u){
 
 /*escape = {'/', 'b', 'f', 'n', 'r', 't'};*/
 /*解析字符串*/
-static int json_parse_string(json_context *c, json_value *v){
-    size_t head = c->top, len;
+static int json_parse_string_raw(json_context *c, char *str[], size_t *len){
+    size_t head = c->top;
     unsigned u, u2;
     const char *p;
     EXPECT(c, '\"');
@@ -146,8 +146,17 @@ static int json_parse_string(json_context *c, json_value *v){
 	char ch = *p++;
 	switch(ch){
 	    case '\"':
-		len = c->top - head;
-		json_set_string(v, (const char *)json_context_pop(c, len), len);
+		*len = c->top - head;
+		/*It's wrong method because str was not allocated space in json_parse_string()*/
+		//memcpy(*str, (char *)json_context_pop(c, *len), *len);
+		
+		/*This method will cause memory leaks*/
+		//*str = (char*)malloc(sizeof(char) * (*len));
+		//memcpy(*str, (char*)json_context_pop(c, *len), *len);
+		
+		/*correct method*/
+		*str = (char *)json_context_pop(c, *len);
+		
 		c->json = p;
 		return JSON_PARSE_OK;
 	    case '\0':
@@ -188,6 +197,15 @@ static int json_parse_string(json_context *c, json_value *v){
 		PUTC(c, ch);
 	}
     }
+}
+
+static int json_parse_string(json_context *c, json_value *v){
+    int ret;
+    char *s;
+    size_t len;
+    if((ret = json_parse_string_raw(c, &s, &len)) == JSON_PARSE_OK)
+	json_set_string(v, s, len);
+    return ret;
 }
 
 static int json_parse_value(json_context *c, json_value *v);
@@ -236,6 +254,87 @@ static int json_parse_array(json_context *c, json_value *v){
     return ret;
 }
 
+static int json_parse_object(json_context *c, json_value *v){
+    size_t size,i;
+    json_member m;
+    int ret;
+    EXPECT(c, '{');
+    json_parse_whitespace(c);
+    if(*c->json == '}'){
+	c->json++;
+	v->type = JSON_OBJECT;
+	v->u.o.m = 0;
+	v->u.o.size = 0;
+	return JSON_PARSE_OK;
+    }
+    m.k = NULL;
+    size = 0;
+    for(;;){
+	json_init(&m.v);
+	char *str;
+	json_parse_whitespace(c);
+	/*TODO: parse key to m.k, m.klen*/
+	if( *c->json != '"'){
+	    ret = JSON_PARSE_MISS_KEY;
+	    break;
+	}
+	if((ret = json_parse_string_raw(c, &str, &m.klen)) != JSON_PARSE_OK)
+	    break;
+	
+	m.k = (char*)malloc(m.klen+1);
+	memcpy(m.k, str, m.klen);
+
+	json_parse_whitespace(c);
+	/*TODO: parse ws colon ws*/
+	if(*c->json != ':'){
+	    ret = JSON_PARSE_MISS_COLON;
+	    break;
+	}
+	c->json++;
+	json_parse_whitespace(c);
+
+	/*parse value*/
+	if((ret = json_parse_value(c, &m.v)) != JSON_PARSE_OK)
+	    break;
+	memcpy(json_context_push(c, sizeof(json_member)), &m, sizeof(json_member));
+	size++;
+	m.k = NULL; /* ownership is transferred to member on stack*/
+	
+	json_parse_whitespace(c);
+	/*TODO: parse ws [comma | right-curly-brack] ws */
+	
+
+	if(*c->json == ','){
+	    c->json++;
+	    
+	}
+	else if(*c->json == '}'){
+	    size_t s = sizeof(json_member) *size;
+	    c->json++;
+	    v->type = JSON_OBJECT;
+	    v->u.o.size = size;
+	    memcpy(v->u.o.m = (json_member*)malloc(s), json_context_pop(c, s), s);
+	    return JSON_PARSE_OK;
+	} 
+
+
+	else{
+	    ret = JSON_PARSE_MISS_COMMA_OR_CURLY_BRACKET;
+	    break;
+	}
+
+    }
+    /*TODO: pop and free members on the stack */
+    free(m.k);
+    for(i = 0; i != size; ++i){
+	json_member*m = (json_member*)json_context_pop(c, sizeof(json_member));
+	free(m->k);
+	json_free(&m->v);
+    }
+    v->type = JSON_NULL;
+    return ret;
+}
+
 /*解析json值,返回解析状态[JSON_PARSE_OK或其他错误码]*/
 static int json_parse_value(json_context *c, json_value *v){
     switch(*c->json){
@@ -244,6 +343,7 @@ static int json_parse_value(json_context *c, json_value *v){
 	case 't' : return json_parse_literal(c, v, "true", JSON_TRUE);
 	case '"' : return json_parse_string(c, v);
 	case '[' : return json_parse_array(c, v);
+	case '{' : return json_parse_object(c, v);
 	case '\0': return JSON_PARSE_EXPECT_VALUE;
 	default  : return json_parse_number(c, v);
     }
@@ -346,4 +446,27 @@ json_value* json_get_array_element(const json_value *v, size_t index){
     assert (v != NULL && v->type == JSON_ARRAY);
     assert (index < v->u.a.size);
     return &v->u.a.e[index];
+}
+
+size_t json_get_object_size(const json_value *v){
+    assert(v != NULL && v->type == JSON_OBJECT);
+    return v->u.o.size;
+}
+
+const char* json_get_object_key(const json_value *v, size_t index){
+    assert(v != NULL && v->type == JSON_OBJECT);
+    assert(index < v->u.o.size);
+    return v->u.o.m[index].k;
+}
+
+size_t json_get_object_key_length(const json_value *v, size_t index){
+    assert(v != NULL && v->type == JSON_OBJECT);
+    assert(index < v->u.o.size);
+    return v->u.o.m[index].klen;
+}
+
+json_value* json_get_object_value(const json_value *v, size_t index){
+    assert(v != NULL && v->type == JSON_OBJECT);
+    assert(index < v->u.o.size);
+    return &v->u.o.m[index].v;
 }
