@@ -44,6 +44,7 @@ enum {
 #define json_init(v) do{ (v)->type = JSON_NULL; }while(0)
 
 int json_parse(json_value *v, const char* json);/*解析json*/
+char* json_stringify(const json_value *v, size_t *length);/*生成json*/
 
 void json_free(json_value *v);/**/
 

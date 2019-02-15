@@ -4,16 +4,21 @@
 #include <math.h>    /* HUGE_VAL */
 #include <stdlib.h>  /* NULL, malloc(), realloc(), free(), strtod() */
 #include <string.h>  /* memcpy() */
-
+#include <stdio.h>
 
 #ifndef JSON_PARSE_STACK_INIT_SIZE
 #define JSON_PARSE_STACK_INIT_SIZE 256
+#endif
+
+#ifndef JSON_PARSE_STRINGIFY_INIT_SIZE
+#define JSON_PARSE_STRINGIFY_INIT_SIZE 256
 #endif
 
 #define EXPECT(c, ch)	do{ assert(*c->json == (ch)); c->json++;}while(0)
 #define ISDIGIT(ch)	((ch) >= '0' && (ch) <= '9')
 #define ISDIGIT1TO9(ch) ((ch) >= '1' && (ch) <= '9')
 #define PUTC(c, ch)	do{ *(char*)json_context_push(c, sizeof(char)) = (ch);}while(0)
+#define PUTS(c, s, len) memcpy(json_context_push(c, len), s, len)
 
 typedef struct{
     const char *json;/*保存json串*/
@@ -369,6 +374,85 @@ int json_parse(json_value *v, const char *json){
     assert(c.top == 0);
     free(c.stack);
     return ret;
+}
+
+#if 0
+#else
+
+static void json_stringify_string(json_context *c, const char *s, size_t len){
+
+    static const char hex_digits[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+    size_t i, size;
+    char *head, *p;
+    assert(s != NULL);
+    p = head = (char*)json_context_push(c, size = len * 6 + 2);
+    *p++ = '"';
+    for(i = 0; i != len; ++i){
+	unsigned char ch = (unsigned char)s[i];
+	switch(ch){
+	    case '\"': *p++ = '\\'; *p++ = '\"'; break;
+	    case '\\': *p++ = '\\'; *p++ = '\\'; break;
+	    case '\b': *p++ = '\\'; *p++ = 'b';	 break;
+	    case '\f': *p++ = '\\'; *p++ = 'f';  break;
+	    case '\n': *p++ = '\\'; *p++ = 'n';  break;
+	    case '\r': *p++ = '\\'; *p++ = 'r';  break;
+	    case '\t': *p++ = '\\'; *p++ = 't';  break;
+	    default:
+		if(ch < 0x20){
+		    *p++ = '\\'; *p++ = 'u'; *p++ = '0'; *p++ = '0';
+		    *p++ = hex_digits[ch>>4];
+		    *p++ = hex_digits[ch&15];
+		}\
+		else
+		    *p++ = s[i];
+	}
+    }
+    *p++ = '"';
+    c->top -= size - (p - head);
+
+}
+
+#endif
+
+static void json_stringify_value(json_context *c, const json_value *v){
+    size_t i;
+    switch(v->type){
+	case JSON_NULL:	    PUTS(c, "null", 4); break;
+	case JSON_FALSE:    PUTS(c, "false",5); break;
+	case JSON_TRUE:	    PUTS(c, "true", 4); break;
+	case JSON_NUMBER:   c->top -= 32 - sprintf((char*)json_context_push(c,32), "%.17g", v->u.n); break;
+	case JSON_STRING: json_stringify_string(c, v->u.s.s, v->u.s.len); break;
+	case JSON_ARRAY:
+	    PUTC(c, '[');
+	    for(i = 0; i != v->u.a.size; ++i){
+		if( i > 0) PUTC(c, ',');
+		json_stringify_value(c, &v->u.a.e[i]);
+	    }
+	    PUTC(c, ']');
+	    break;
+	case JSON_OBJECT:
+	    PUTC(c, '{');
+	    for(i = 0; i != v->u.o.size; ++i){
+		if(i > 0) PUTC(c, ',');
+		json_stringify_string(c, v->u.o.m[i].k, v->u.o.m[i].klen);
+		PUTC(c, ':');
+		json_stringify_value(c, &v->u.o.m[i].v);
+	    }
+	    PUTC(c, '}');
+	    break;
+	default: assert(0 && "invalid type");
+    }
+}
+
+char* json_stringify(const json_value *v, size_t *length){
+    json_context c;
+    assert(v!= NULL);
+    c.stack = (char *)malloc(c.size = JSON_PARSE_STRINGIFY_INIT_SIZE);
+    c.top = 0;
+    json_stringify_value(&c, v);
+    if(length) *length = c.top;
+    PUTC(&c, '\0');
+    return c.stack;
 }
 
 void json_free(json_value *v){
