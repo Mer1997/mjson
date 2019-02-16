@@ -46,9 +46,15 @@ enum {
 int json_parse(json_value *v, const char* json);/*解析json*/
 char* json_stringify(const json_value *v, size_t *length);/*生成json*/
 
+//TODO
+void json_copy(json_value *dst, const json_value *src);
+void json_move(json_value *dst, json_value *src);
+void json_swap(json_value *lhs, json_value *rhs);
+
 void json_free(json_value *v);/**/
 
 json_type json_get_type(const json_value *v);/*获取json值的类型*/
+int json_is_equal(const json_value *lhs, const json_value *rhs);
 
 #define json_set_null(v) json_free(v)
 
@@ -62,14 +68,51 @@ const char* json_get_string(const json_value *v);
 size_t json_get_string_length(const json_value *v);
 void json_set_string(json_value *v, const char *s, size_t len);
 
+//TODO
+void json_set_array(json_value *v, size_t capacity);
+
 size_t json_get_array_size(const json_value *v);
+//TODO
+size_t json_get_array_capacity(const json_value *v);
+
+//TODO
+void json_reserve_array(json_value *v);
+void json_shrink_array(json_value *v);
+void json_clear_array(json_value *v);
+
 json_value* json_get_array_element(const json_value *v, size_t index);
+//TODO
+json_value* json_pushback_array_element(json_value *v);
+void json_popback_array_element(json_value *v);
+json_value* json_insert_array_element(json_value *v, size_t index);
+void json_erase_array_element(json_value *v, size_t index, size_t count);
+
+//TODO
+void json_set_object(json_value *v, size_t capacity);
 
 size_t json_get_object_size(const json_value *v);
+
+//TODO
+size_t json_get_object_capacity(const json_value *v);
+
+//TODO
+void json_reserve_object(json_value *v, size_t capacity);
+void json_shrink_object(json_value *v);
+void json_clear_object(json_value *v);
+
 const char* json_get_object_key(const json_value *v, size_t index);
 
 size_t json_get_object_key_length(const json_value*v, size_t index);
 json_value* json_get_object_value(const json_value *v, size_t index);
+
+#define JSON_KEY_NOT_EXIST ((size_t)-1)
+
+size_t json_find_object_index(const json_value *v, const char *key, size_t klen);
+json_value* json_find_object_value(json_value *v, const char *key, size_t len);
+void json_set_object_value(json_value *v, const char *key, size_t klen, const json_value *value);
+//TODO
+void json_remove_object_value(josn_value *v, size_t index);
+   
 
 #endif /*__MJSON_H__*/
     

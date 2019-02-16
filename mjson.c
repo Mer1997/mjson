@@ -554,3 +554,61 @@ json_value* json_get_object_value(const json_value *v, size_t index){
     assert(index < v->u.o.size);
     return &v->u.o.m[index].v;
 }
+
+size_t json_find_object_index(const json_value *v, const char *key, size_t klen){
+    size_t i;
+    assert(v != NULL && v->type == JSON_OBJECT && key != NULL);
+    for(i = 0; i != v->u.o.size; ++i){
+        if(v->u.o.m[i].klen == klen && memcmp(v->u.o.m[i].k, key, klen) == 0)
+            return i;
+    }
+    return JSON_KEY_NOT_EXIST;
+}
+
+json_value* json_find_object_value(json_value *v, const char *key, size_t klen){
+    size_t index = json_find_object_index(v, key, klen);
+    return index != JSON_KEY_NOT_EXIST ? &v->u.o.m[index].v : NULL;
+}
+
+int json_is_equal(const json_value *lhs, const json_value *rhs){
+    assert(lhs != NULL && rhs != NULL);
+    if(lhs->type != rhs->type)
+        return 0;
+    switch(lhs->type){
+        case JSON_STRING:   return lhs->u.s.len == rhs->u.s.len && memcpy(lhs->u.s.s, rhs->u.s.s, lhs->u.s.len) == 0;
+        case JSON_NUMBER:   return lhs->u.n == rhs->u.n;
+        case JSON_ARRAY:
+            if(lhs->u.a.size != rhs->u.a.size)
+                return 0;
+            for(i = 0; i != lhs->u.a.size; ++i)
+                if(!json_is_equal(&lhs->u.a.e[i], &rhs->u.a.e[i]))
+                    return 0;
+            return 1;
+        case JSON_OBJECT:
+            /**/
+        default:
+            return 1;
+    }
+}
+
+void json_copy(json_value *dst, const json_value *src){
+    size_t i;
+    assert(src != NULL && dst != NULL & src != dst);
+    switch(src->type){
+        case JSON_STRING:
+            json_set_string(dst, src->u.s.s, src->u.s.len);
+            break;
+        case JSON_JSON_ARRAY:
+            //TODO
+            break;
+        case JSON_OBJECT:
+            //TODO
+            break;
+        default:
+            json_free(dst);
+            memcpy(dst, src, sizeof(json_value));
+            break;
+    }
+}
+
+
