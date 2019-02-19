@@ -46,7 +46,6 @@ enum {
 int json_parse(json_value *v, const char* json);/*解析json*/
 char* json_stringify(const json_value *v, size_t *length);/*生成json*/
 
-//TODO
 void json_copy(json_value *dst, const json_value *src);
 void json_move(json_value *dst, json_value *src);
 void json_swap(json_value *lhs, json_value *rhs);
@@ -68,14 +67,11 @@ const char* json_get_string(const json_value *v);
 size_t json_get_string_length(const json_value *v);
 void json_set_string(json_value *v, const char *s, size_t len);
 
-//TODO
 void json_set_array(json_value *v, size_t capacity);
 
 size_t json_get_array_size(const json_value *v);
-//TODO
 size_t json_get_array_capacity(const json_value *v);
 
-//TODO
 void json_reserve_array(json_value *v);
 void json_shrink_array(json_value *v);
 void json_clear_array(json_value *v);

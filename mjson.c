@@ -212,7 +212,6 @@ static int json_parse_string(json_context *c, json_value *v){
 	json_set_string(v, s, len);
     return ret;
 }
-
 static int json_parse_value(json_context *c, json_value *v);
 
 static int json_parse_array(json_context *c, json_value *v){
@@ -521,15 +520,70 @@ void json_set_string(json_value *v, const char *s, size_t len){
     v->type = JSON_STRING;
 }
 
+void json_set_array(json_value *v, size_t capacity){
+    assert(v != NULL);
+    json_free(v);
+    v->type = JSON_ARRAY;
+    v->u.a.size = 0;
+    v->u.a.capacity = capacity;
+    v->u.a.e = capacity > 0 ? (json_value *)malloc(capacity * sizeof(json_value)) : NULL;
+}
+
 size_t json_get_array_size(const json_value *v){
     assert(v != NULL && v->type == JSON_ARRAY);
     return v->u.a.size;
+}
+
+size_t json_get_array_capacity(const json_value *v){
+    assert(v != NULL && v->type == JSON_ARRAY);
+    return v->u.a.capacity;
+}
+
+void json_reserve_array(json_value *v, size_t capacity){
+    assert(v != NULL && v->type == JSON_ARRAY);
+    if(v->u.a.capacity < capacity){
+	v->u.a.capacity = capacity;
+	v->u.a.e = (json_value*)realloc(v->u.a.e, capacity * sizeof(json_value));
+    }
+}
+
+void josn_shrink_array(json_value *v){
+    assert(v != NULL && v->type == JSON_ARRAY);
+    if(v->u.a.capacity > capacity){
+        v->u.a.capacity = capacity;
+        v->u.a.e = (json_value*)realloc(v->u.a.e, capacity * sizeof(json_value));
+    }
+
+}
+
+void json_clear_array(json_value *v){
+    assert(v != NULL && v->type == JSON_ARRAY);
+    json_erase_array_element(v, 0, v->u.a.size);
 }
 
 json_value* json_get_array_element(const json_value *v, size_t index){
     assert (v != NULL && v->type == JSON_ARRAY);
     assert (index < v->u.a.size);
     return &v->u.a.e[index];
+}
+
+json_value* json_pushback_array_element(json_value *v){
+    assert(v != NULL && v->type == JSON_ARRAY);
+    if( v->u.a.size == v->u.a.capacity)
+	json_reserve_array(v, v->u.a.capacity == 0 ? 2 : v->u.a.capacity * 1.5);
+    json_init(&v->u.a.e[v->u.a.size]);
+    return &v->u.a.e[v->u.a.size++];
+}
+
+void json_popback_array_element(json_valeu *v){
+    assert(v != NULL && v->type  == JSON_ARRAY && v->u.a.size > 0);
+    json_free(&v->u.a.e[--v->u.a.size]);
+}
+
+json_value* json_insert_array_element(json_value *v, size_t index){
+    assert(v != NULL && v->type == JSON_ARRAY && index <= v->u.a.size);
+    //TODO
+    return NULL;
 }
 
 size_t json_get_object_size(const json_value *v){
@@ -611,4 +665,20 @@ void json_copy(json_value *dst, const json_value *src){
     }
 }
 
+void json_move(json_value *dst, json_value *src){
+    assert(dst != NULL && src != NULL && src != dst);
+    json_free(dst);
+    memcpy(dst, src, sizeof(json_value));
+    json_init(src);
+}
 
+void json_swap(josn_value *lhs, json_value *rhs){
+    assert(lhs != NULL && rhs != NULL);
+    if( lhs != rhs){
+	json_value temp; 
+	memcpy(&temp, lhs, sizeof(json_value));
+	memcpy(lhs,   rhs, sizeof(json_value));
+	memcpy(rhs, &temp, sizeof(json_value));
+
+    }
+}
