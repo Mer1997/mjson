@@ -6,7 +6,7 @@
 ================= =====  
 
 ---
-- 参考教程 [miloyip's json-tutori](https://github.com/miloyip/json-tutorial)
+- 参考教程 [miloyip's json-tutorial](https://github.com/miloyip/json-tutorial)
 ---
 
 ---
