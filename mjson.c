@@ -586,6 +586,17 @@ json_value* json_insert_array_element(json_value *v, size_t index){
     return NULL;
 }
 
+void json_erase_array_element(json_value *v, size_t index, size_t count){
+    assert(v != NULL && v->type == JSON_ARRAY && index + count  <= v->u.a.size);
+    //TODO
+}
+
+void json_set_object(json_value *v ,size_t capacity){
+    assert(v != NULL);
+    json_free(v);
+    //TODO 
+}
+
 size_t json_get_object_size(const json_value *v){
     assert(v != NULL && v->type == JSON_OBJECT);
     return v->u.o.size;

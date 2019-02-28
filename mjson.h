@@ -77,7 +77,6 @@ void json_shrink_array(json_value *v);
 void json_clear_array(json_value *v);
 
 json_value* json_get_array_element(const json_value *v, size_t index);
-//TODO
 json_value* json_pushback_array_element(json_value *v);
 void json_popback_array_element(json_value *v);
 json_value* json_insert_array_element(json_value *v, size_t index);
