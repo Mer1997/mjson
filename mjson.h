@@ -10,8 +10,8 @@ typedef struct json_member json_member;
 
 struct json_value{
     union{
-	struct{ json_member *m; size_t size;}o;/*object*/
-	struct{ json_value *e; size_t size;}a;/*array*/
+	struct{ json_member *m; size_t size, capacity;}o;/*object*/
+	struct{ json_value *e; size_t size, capacity;}a;/*array*/
 	struct{ char*s; size_t len; }s; /*string*/
 	double n;/*number*/
     }u;
@@ -72,7 +72,7 @@ void json_set_array(json_value *v, size_t capacity);
 size_t json_get_array_size(const json_value *v);
 size_t json_get_array_capacity(const json_value *v);
 
-void json_reserve_array(json_value *v);
+void json_reserve_array(json_value *v, size_t capacity);
 void json_shrink_array(json_value *v);
 void json_clear_array(json_value *v);
 
@@ -82,15 +82,12 @@ void json_popback_array_element(json_value *v);
 json_value* json_insert_array_element(json_value *v, size_t index);
 void json_erase_array_element(json_value *v, size_t index, size_t count);
 
-//TODO
 void json_set_object(json_value *v, size_t capacity);
 
 size_t json_get_object_size(const json_value *v);
 
-//TODO
 size_t json_get_object_capacity(const json_value *v);
 
-//TODO
 void json_reserve_object(json_value *v, size_t capacity);
 void json_shrink_object(json_value *v);
 void json_clear_object(json_value *v);
@@ -104,9 +101,8 @@ json_value* json_get_object_value(const json_value *v, size_t index);
 
 size_t json_find_object_index(const json_value *v, const char *key, size_t klen);
 json_value* json_find_object_value(json_value *v, const char *key, size_t len);
-void json_set_object_value(json_value *v, const char *key, size_t klen, const json_value *value);
-//TODO
-void json_remove_object_value(josn_value *v, size_t index);
+json_value* json_set_object_value(json_value *v, const char *key, size_t klen);
+void json_remove_object_value(json_value *v, size_t index);
    
 
 #endif /*__MJSON_H__*/

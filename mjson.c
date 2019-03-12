@@ -153,12 +153,15 @@ static int json_parse_string_raw(json_context *c, char *str[], size_t *len){
 	    case '\"':
 		*len = c->top - head;
 		/*It's wrong method because str was not allocated space in json_parse_string()*/
-		//memcpy(*str, (char *)json_context_pop(c, *len), *len);
+		/*memcpy(*str, (char *)json_context_pop(c, *len), *len);*/
 		
 		/*This method will cause memory leaks*/
-		//*str = (char*)malloc(sizeof(char) * (*len));
-		//memcpy(*str, (char*)json_context_pop(c, *len), *len);
-		
+		/*	
+	       	*str = (char*)malloc(sizeof(char) * (*len));
+		memcpy(*str, (char*)json_context_pop(c, *len), *len);
+		*/
+
+
 		/*correct method*/
 		*str = (char *)json_context_pop(c, *len);
 		
@@ -547,11 +550,11 @@ void json_reserve_array(json_value *v, size_t capacity){
     }
 }
 
-void josn_shrink_array(json_value *v){
+void json_shrink_array(json_value *v){
     assert(v != NULL && v->type == JSON_ARRAY);
-    if(v->u.a.capacity > capacity){
-        v->u.a.capacity = capacity;
-        v->u.a.e = (json_value*)realloc(v->u.a.e, capacity * sizeof(json_value));
+    if(v->u.a.capacity > v->u.a.size){
+        v->u.a.capacity = v->u.a.size;
+        v->u.a.e = (json_value*)realloc(v->u.a.e, v->u.a.capacity * sizeof(json_value));
     }
 
 }
@@ -575,31 +578,57 @@ json_value* json_pushback_array_element(json_value *v){
     return &v->u.a.e[v->u.a.size++];
 }
 
-void json_popback_array_element(json_valeu *v){
+void json_popback_array_element(json_value *v){
     assert(v != NULL && v->type  == JSON_ARRAY && v->u.a.size > 0);
     json_free(&v->u.a.e[--v->u.a.size]);
 }
 
 json_value* json_insert_array_element(json_value *v, size_t index){
     assert(v != NULL && v->type == JSON_ARRAY && index <= v->u.a.size);
-    //TODO
+    /*TODO*/
     return NULL;
 }
 
 void json_erase_array_element(json_value *v, size_t index, size_t count){
     assert(v != NULL && v->type == JSON_ARRAY && index + count  <= v->u.a.size);
-    //TODO
+    /*TODO*/
 }
 
 void json_set_object(json_value *v ,size_t capacity){
+    
     assert(v != NULL);
     json_free(v);
-    //TODO 
+    v->type = JSON_OBJECT;
+    v->u.o.size = 0;
+    v->u.o.capacity = capacity;
+    v->u.o.m = capacity > 0 ? (json_member*)malloc(capacity * sizeof(json_member)) : NULL;
 }
 
 size_t json_get_object_size(const json_value *v){
     assert(v != NULL && v->type == JSON_OBJECT);
     return v->u.o.size;
+}
+
+size_t json_get_object_capacity(const json_value* v){
+    assert(v != NULL && v->type == JSON_OBJECT);
+    /*TODO*/
+    return 0;
+}
+
+void json_reserve_object(json_value *v, size_t capacity){
+    assert(v != NULL && v->type == JSON_OBJECT);
+    /*TODO*/
+}
+
+void json_shrink_object(json_value *v){
+    assert (v != NULL && v->type == JSON_OBJECT);
+    /*TODO*/
+}
+
+void json_clear_object(json_value *v){
+    assert(v != NULL && v->type == JSON_OBJECT);
+    /*TODO*/
+
 }
 
 const char* json_get_object_key(const json_value *v, size_t index){
@@ -635,7 +664,20 @@ json_value* json_find_object_value(json_value *v, const char *key, size_t klen){
     return index != JSON_KEY_NOT_EXIST ? &v->u.o.m[index].v : NULL;
 }
 
+json_value* json_set_object_value(json_value *v, const char* key, size_t klen){
+    assert(v != NULL && v->type == JSON_OBJECT && key != NULL);
+    /*TODO*/
+    return NULL;
+}
+
+void json_remove_object_value(json_value *v, size_t index){
+    assert(v != NULL && v->type == JSON_OBJECT && index < v->u.o.size);
+    /*TODO*/
+    
+}
+
 int json_is_equal(const json_value *lhs, const json_value *rhs){
+    size_t i;
     assert(lhs != NULL && rhs != NULL);
     if(lhs->type != rhs->type)
         return 0;
@@ -663,11 +705,11 @@ void json_copy(json_value *dst, const json_value *src){
         case JSON_STRING:
             json_set_string(dst, src->u.s.s, src->u.s.len);
             break;
-        case JSON_JSON_ARRAY:
-            //TODO
+        case JSON_ARRAY:
+            /*TODO*/
             break;
         case JSON_OBJECT:
-            //TODO
+            /*TODO*/
             break;
         default:
             json_free(dst);
@@ -683,7 +725,7 @@ void json_move(json_value *dst, json_value *src){
     json_init(src);
 }
 
-void json_swap(josn_value *lhs, json_value *rhs){
+void json_swap(json_value *lhs, json_value *rhs){
     assert(lhs != NULL && rhs != NULL);
     if( lhs != rhs){
 	json_value temp; 
