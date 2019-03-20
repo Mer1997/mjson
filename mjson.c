@@ -280,7 +280,7 @@ static int json_parse_object(json_context *c, json_value *v){
 	json_init(&m.v);
 	char *str;
 	json_parse_whitespace(c);
-	/*TODO: parse key to m.k, m.klen*/
+	/* parse key to m.k, m.klen*/
 	if( *c->json != '"'){
 	    ret = JSON_PARSE_MISS_KEY;
 	    break;
@@ -290,9 +290,10 @@ static int json_parse_object(json_context *c, json_value *v){
 	
 	m.k = (char*)malloc(m.klen+1);
 	memcpy(m.k, str, m.klen);
+	m.k[m.klen] = '\0';
 
 	json_parse_whitespace(c);
-	/*TODO: parse ws colon ws*/
+	/* parse ws colon ws*/
 	if(*c->json != ':'){
 	    ret = JSON_PARSE_MISS_COLON;
 	    break;
@@ -331,7 +332,7 @@ static int json_parse_object(json_context *c, json_value *v){
 	}
 
     }
-    /*TODO: pop and free members on the stack */
+    /* pop and free members on the stack */
     free(m.k);
     for(i = 0; i != size; ++i){
 	json_member*m = (json_member*)json_context_pop(c, sizeof(json_member));
@@ -699,7 +700,7 @@ int json_is_equal(const json_value *lhs, const json_value *rhs){
 }
 
 void json_copy(json_value *dst, const json_value *src){
-    size_t i;
+    size_t i,len;
     assert(src != NULL && dst != NULL & src != dst);
     switch(src->type){
         case JSON_STRING:
@@ -707,6 +708,11 @@ void json_copy(json_value *dst, const json_value *src){
             break;
         case JSON_ARRAY:
             /*TODO*/
+	    len = json_get_array_size(src);
+	    /*
+	    for(i = 0; i != len; ++i){
+		json_copy(dst+i,(src+i)->u.a.e);
+	    }*/
             break;
         case JSON_OBJECT:
             /*TODO*/

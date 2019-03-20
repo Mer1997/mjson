@@ -480,6 +480,25 @@ static void test_copy(){
     EXPECT_TRUE(json_is_equal(&v2, &v1));
     json_free(&v1);
     json_free(&v2);
+    
+    json_init(&v1);
+    json_parse(&v1, "312");
+    printf("v1's type :%d, v1's value :%1.7g\n",v1.type,v1.u.n);
+    json_init(&v2);
+    json_copy(&v2, &v1);
+    EXPECT_TRUE(json_is_equal(&v2, &v1));
+    printf("v1's vlaue :%1.7g, v2's value :%1.7g\n",v1.u.n, v2.u.n);
+    json_free(&v1);
+    json_free(&v2);
+
+    json_init(&v1);
+    json_parse(&v1, "[1,2,3]");
+    json_init(&v2);
+    json_copy(&v2, &v1);
+    EXPECT_TRUE(json_is_equal(&v2, &v1));
+    json_free(&v1);
+    json_free(&v2);
+
 }
 
 static void test_move(){
